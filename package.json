@@ -20,6 +20,7 @@
   "dependencies": {
     "express": "^5.2.1",
     "redis": "^5.12.1",
-    "supabase": "^2.98.2"
+    "supabase": "^2.98.2",
+    "upstash": "^0.0.1"
   }
 }
