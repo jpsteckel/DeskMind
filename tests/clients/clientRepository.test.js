@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { getAllClients, getClientByID, getClientByPhoneNumber, createClient } from '../../src/clients/clientRepository.js';
+import { getAllClients, getClientByID, getClientByPhoneNumber, createClient, updateClient } from '../../src/clients/clientRepository.js';
 
 describe('Client Repository', () => {
   test('fetches all clients from the database', async () => {
@@ -37,5 +37,15 @@ describe('Client Repository', () => {
     assert(createdClient !== undefined);
     assert(createdClient.business_name === defaultClient.business_name);
     assert(createdClient.phone_number === defaultClient.phone_number);
+  });
+
+  test('update client', async () => {
+    const testPhoneNumber = "+10000000000";
+    const updatedBusinessName = "Updated Client Name";
+
+    const updatedClient = await updateClient(testPhoneNumber, { business_name: updatedBusinessName });
+
+    assert(updatedClient !== undefined);
+    assert(updatedClient.business_name === updatedBusinessName);
   });
 });
