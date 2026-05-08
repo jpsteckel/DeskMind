@@ -59,3 +59,38 @@ export async function updateClient(phoneNumber, updates) {
   if (error) throw new Error(`Failed to update client: ${error.message}`);
   return data;
 }
+
+/**
+ * Fetches all client records from Supabase.
+ *
+ * @returns {Promise<Array<object>>} Array of client rows.
+ */
+export async function getAllClients() {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*');
+
+  if (error) throw new Error(`Failed to fetch clients: ${error.message}`);
+  return data;
+}
+
+/**
+ * Fetches a single client record from Supabase by their ID.
+ *
+ * @param {string|number} id - The client's unique ID.
+ * @returns {Promise<object|null>} The client row, or null if not found.
+ */
+export async function getClientByID(id) {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(`Supabase lookup failed: ${error.message}`);
+  }
+
+  return data;
+}

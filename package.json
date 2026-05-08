@@ -12,15 +12,20 @@
   },
   "license": "ISC",
   "author": "jpsteckel",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "@upstash/redis": "^1.38.0",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "redis": "^5.12.1",
     "supabase": "^2.98.2",
-    "upstash": "^0.0.1"
+    "telnyx": "^6.57.0",
+    "upstash": "^0.0.1",
+    "ws": "^8.20.0"
   }
 }
