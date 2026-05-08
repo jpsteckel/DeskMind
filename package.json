@@ -1,0 +1,25 @@
+{
+  "name": "deskmind",
+  "version": "1.0.0",
+  "description": "AI agent management software",
+  "homepage": "https://github.com/jpsteckel/DeskMind#readme",
+  "bugs": {
+    "url": "https://github.com/jpsteckel/DeskMind/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jpsteckel/DeskMind.git"
+  },
+  "license": "ISC",
+  "author": "jpsteckel",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "redis": "^5.12.1",
+    "supabase": "^2.98.2"
+  }
+}
