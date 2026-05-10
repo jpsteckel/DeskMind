@@ -1,5 +1,3 @@
-import telnyx from './client.js';
-
 /**
  * Starts the shared AI assistant on an answered call.
  *
@@ -8,9 +6,23 @@ import telnyx from './client.js';
  * @returns {Promise<void>}
  */
 export async function startAssistant(callControlId, dynamicVariables) {
-  const call = await telnyx.calls.retrieve(callControlId);
-  await call.startAIAssistant({
-    assistant_id: process.env.TELNYX_ASSISTANT_ID,
-    AIAssistantDynamicVariables: dynamicVariables,
-  });
+  const response = await fetch(
+    `https://api.telnyx.com/v2/calls/${callControlId}/actions/start_ai_assistant`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+      },
+      body: JSON.stringify({
+        assistant_id: process.env.TELNYX_ASSISTANT_ID,
+        AIAssistantDynamicVariables: dynamicVariables,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Failed to start assistant: ${JSON.stringify(error)}`);
+  }
 }
