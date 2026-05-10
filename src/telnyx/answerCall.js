@@ -8,5 +8,6 @@ import telnyx from './client.js';
  * @returns {Promise<void>}
  */
 export async function answerCall(callControlId) {
-  await telnyx.calls.answer(callControlId);
+  const call = await telnyx.calls.retrieve(callControlId);
+  await call.answer();
 }
