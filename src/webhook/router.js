@@ -18,6 +18,7 @@ const router = Router();
 router.post('/', async (req, res) => {
   // Acknowledge immediately so Telnyx doesn't retry the webhook
   res.sendStatus(200);
+  console.log('Webhook received:', req.body);
 
   const event = req.body?.data;
   if (!event) return;
