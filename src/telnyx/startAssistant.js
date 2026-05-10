@@ -17,7 +17,7 @@ export async function startAssistant(callControlId, dynamicVariables) {
   await telnyx.calls.actions.startAIAssistant(callControlId, {
     assistant: {
       id: process.env.TELNYX_ASSISTANT_ID,
-      AIAssistantDynamicVariables: dynamicVariables,
+      dynamic_variables: dynamicVariables,
     }
   });
 }
