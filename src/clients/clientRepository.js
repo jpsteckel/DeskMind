@@ -4,14 +4,14 @@ import supabase from '../db/supabase.js';
  * Fetches a single client record from Supabase by their Telnyx phone number.
  *
  * @param {string} phoneNumber - E.164 formatted number, e.g. "+13025550101".
- *   This must match the `phone_number` column exactly.
+ *   This must match the `phone` column exactly.
  * @returns {Promise<object|null>} The client row, or null if not found.
  */
 export async function getClientByPhoneNumber(phoneNumber) {
   const { data, error } = await supabase
     .from('clients')
     .select('*')
-    .eq('phone_number', phoneNumber)
+    .eq('phone', phoneNumber)
     .single();
 
   if (error) {
