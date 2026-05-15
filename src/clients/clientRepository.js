@@ -52,7 +52,7 @@ export async function updateClient(phoneNumber, updates) {
   const { data, error } = await supabase
     .from('clients')
     .update(updates)
-    .eq('phone_number', phoneNumber)
+    .eq('phone', phoneNumber)
     .select()
     .single();
 
