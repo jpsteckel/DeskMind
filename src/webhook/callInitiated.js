@@ -2,6 +2,7 @@ import { answerCall } from '../telnyx/answerCall.js';
 import { startAssistant } from '../telnyx/startAssistant.js';
 import { getCachedClient } from '../clients/clientCache.js';
 import { buildVariables } from '../assistant/buildVariables.js';
+import { storeCallMetadata } from '../calls/callCache.js';
 
 /**
  * Handles the call.initiated webhook event from Telnyx.
@@ -10,14 +11,15 @@ import { buildVariables } from '../assistant/buildVariables.js';
  *  1. Extract the dialed number (telnyx_agent_target) and call_control_id.
  *  2. Answer the call immediately so Telnyx doesn't time out.
  *  3. Look up the client record by their Telnyx number.
- *  4. Build the dynamic variables payload from the client record.
- *  5. Start the AI assistant with those variables injected.
+ *  4. Store the call metadata (client_id, caller phone) in Redis for later retrieval.
+ *  5. Build the dynamic variables payload from the client record.
+ *  6. Start the AI assistant with those variables injected.
  *
  * @param {object} payload - The `data.payload` object from the Telnyx webhook body.
  * @returns {Promise<void>}
  */
 export async function handleCallInitiated(payload) {
-  const { call_control_id, to: dialedNumber, direction } = payload;
+  const { call_control_id, to: dialedNumber, from: callerPhone, direction } = payload;
 
   // Only handle inbound calls — ignore legs created by outbound dials or transfers
   if (direction !== 'incoming') return;
@@ -35,6 +37,13 @@ export async function handleCallInitiated(payload) {
     console.warn(`No client found for number: ${dialedNumber}`);
     return;
   }
+
+  // Store call metadata in Redis so we can look it up when the call ends
+  await storeCallMetadata(call_control_id, {
+    client_id: client.id,
+    caller_phone: callerPhone,
+    caller_name: null, // May be populated later if available in Telnyx payload
+  });
 
   // Map the client DB record to Telnyx dynamic variable format
   const variables = buildVariables(client);
