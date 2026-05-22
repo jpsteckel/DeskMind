@@ -85,18 +85,3 @@ export async function deleteCallMetadata(callControlId) {
     // Don't throw — cleanup failure shouldn't break the call
   }
 }
-
-/**
- * Removes call metadata from Redis after a call ends.
- * Helps keep Redis clean and reduces storage usage.
- * 
- * @param {string} callControlId - The Telnyx call_control_id.
- * @returns {Promise<void>}
- */
-export async function deleteCallMetadata(callControlId) {
-  try {
-    await redis.del(callMetadataKey(callControlId));
-  } catch (err) {
-    console.warn(`Failed to delete call metadata from Redis: ${err.message}`);
-  }
-}
