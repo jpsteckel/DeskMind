@@ -28,6 +28,56 @@ export async function initializeRecordingBuckets() {
  * @param {string} recordingId - The Telnyx recording ID (if available in webhook)
  * @returns {Promise<string>} The public URL of the uploaded recording
  */
+function normalizeRecordingPayload(payload = {}) {
+  return payload.recording && typeof payload.recording === 'object'
+    ? payload.recording
+    : payload;
+}
+
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  return [value];
+}
+
+function extractUrlFromEntry(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  return entry.url || entry.download_url || entry.recording_url || entry.public_url || entry.public_recording_url || entry.href || entry.uri || entry.direct_url || entry.direct_uri || null;
+}
+
+function extractFirstRecordingUrl(payload) {
+  const normalized = normalizeRecordingPayload(payload);
+  const candidateCollections = [
+    normalized.recording_urls,
+    normalized.public_recording_urls,
+    normalized.public_urls,
+    normalized.urls,
+  ];
+
+  for (const collection of candidateCollections) {
+    const entries = toArray(collection);
+    for (const entry of entries) {
+      const url = extractUrlFromEntry(entry);
+      if (url) {
+        return {
+          url,
+          contentType: entry?.mime_type || entry?.content_type || normalized?.mime_type || normalized?.content_type || 'audio/wav',
+        };
+      }
+    }
+  }
+
+  const scalarUrl = extractUrlFromEntry(normalized);
+  if (scalarUrl) {
+    return {
+      url: scalarUrl,
+      contentType: normalized.mime_type || normalized.content_type || 'audio/wav',
+    };
+  }
+
+  return null;
+}
+
 export async function fetchAndUploadRecording(callControlId, callId, recordingId, recordingPayload = {}) {
   if (!recordingId) {
     console.warn(`No recording ID provided for call ${callControlId}`);
@@ -37,29 +87,15 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
   try {
     let recordingUrl;
     let contentType = 'audio/wav';
+    const normalizedPayload = normalizeRecordingPayload(recordingPayload);
 
-    // Prefer the download URL from the webhook payload if available.
-    const recordingUrls = recordingPayload.recording_urls
-      ? Array.isArray(recordingPayload.recording_urls)
-        ? recordingPayload.recording_urls
-        : [recordingPayload.recording_urls]
-      : [];
-
-    if (recordingUrls.length > 0) {
-      recordingUrl = recordingUrls[0]?.url || recordingUrls[0]?.download_url || recordingUrls[0]?.recording_url;
-      contentType = recordingUrls[0]?.mime_type || recordingUrls[0]?.content_type || contentType;
-    }
-
-    if (!recordingUrl && recordingPayload.public_recording_urls) {
-      if (typeof recordingPayload.public_recording_urls === 'string') {
-        recordingUrl = recordingPayload.public_recording_urls;
-      } else if (recordingPayload.public_recording_urls?.url) {
-        recordingUrl = recordingPayload.public_recording_urls.url;
-      }
+    const payloadMatch = extractFirstRecordingUrl(normalizedPayload);
+    if (payloadMatch) {
+      recordingUrl = payloadMatch.url;
+      contentType = payloadMatch.contentType;
     }
 
     if (!recordingUrl) {
-      // Fallback to Telnyx API metadata retrieval.
       let recordingDetails;
       try {
         recordingDetails = await telnyx.recordings.retrieve(recordingId);
@@ -68,33 +104,34 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
         return null;
       }
 
-      // Support Telnyx responses that use channels or recording_urls.
-      recordingUrl = recordingDetails?.channels?.[0]?.url;
-      contentType = recordingDetails?.channels?.[0]?.mime_type || contentType;
-      if (!recordingUrl && recordingDetails?.recording_urls?.length) {
-        recordingUrl = recordingDetails.recording_urls[0]?.url || recordingDetails.recording_urls[0]?.download_url;
-        contentType = recordingDetails.recording_urls[0]?.mime_type || recordingDetails.recording_urls[0]?.content_type || contentType;
+      const normalizedDetails = normalizeRecordingPayload(recordingDetails);
+      const detailsMatch = extractFirstRecordingUrl(normalizedDetails);
+      if (detailsMatch) {
+        recordingUrl = detailsMatch.url;
+        contentType = detailsMatch.contentType;
+      }
+
+      if (!recordingUrl) {
+        recordingUrl = recordingDetails?.channels?.[0]?.url;
+        contentType = recordingDetails?.channels?.[0]?.mime_type || contentType;
       }
 
       if (!recordingUrl) {
         console.warn(`No download URL found for recording ${recordingId}`);
+        console.debug('Recording metadata keys:', Object.keys(recordingDetails || {}));
         return null;
       }
     }
 
-    // Download the recording from Telnyx
     const response = await fetch(recordingUrl);
     if (!response.ok) {
       throw new Error(`Failed to download recording: ${response.statusText}`);
     }
 
     const recordingBuffer = await response.buffer();
-
-    // Generate a unique filename with timestamp and call ID
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `${timestamp}/${callId}.wav`;
 
-    // Upload to Supabase Storage
     const uploadResult = await uploadFile(
       RECORDING_BUCKET,
       fileName,
@@ -103,8 +140,6 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
     );
 
     console.log(`Recording uploaded successfully for call ${callId}: ${uploadResult.publicUrl}`);
-
-    // Update the call record with the recording URL
     await updateCall(callId, {
       recording_url: uploadResult.publicUrl,
     });
@@ -112,7 +147,6 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
     return uploadResult.publicUrl;
   } catch (err) {
     console.error(`Error fetching and uploading recording for call ${callId}:`, err);
-    // Don't throw — recording failure shouldn't block call logging
     return null;
   }
 }

@@ -12,8 +12,9 @@ import { getCallById } from '../calls/callRepository.js';
  * @returns {Promise<void>}
  */
 export async function handleCallRecording(payload) {
-  const callControlId = payload.call_control_id || payload.call?.call_control_id || payload.recording?.call_control_id;
-  const recordingId = payload.recording_id || payload.recording?.id || payload.id;
+  const recordingPayload = payload.recording || payload;
+  const callControlId = payload.call_control_id || payload.call?.call_control_id || recordingPayload.call_control_id;
+  const recordingId = payload.recording_id || recordingPayload.id || recordingPayload.recording_id || payload.id;
 
   if (!callControlId) {
     console.warn('Recording webhook received without call_control_id. Unable to associate recording.');
