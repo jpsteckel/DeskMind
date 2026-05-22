@@ -50,7 +50,7 @@ export async function handleCallRecording(payload) {
     return;
   }
 
-  const recordingUrl = await fetchAndUploadRecording(callControlId, callId, recordingId);
+  const recordingUrl = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
   if (recordingUrl) {
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);

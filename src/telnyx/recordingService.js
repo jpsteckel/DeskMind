@@ -28,36 +28,62 @@ export async function initializeRecordingBuckets() {
  * @param {string} recordingId - The Telnyx recording ID (if available in webhook)
  * @returns {Promise<string>} The public URL of the uploaded recording
  */
-export async function fetchAndUploadRecording(callControlId, callId, recordingId) {
+export async function fetchAndUploadRecording(callControlId, callId, recordingId, recordingPayload = {}) {
   if (!recordingId) {
     console.warn(`No recording ID provided for call ${callControlId}`);
     return null;
   }
 
   try {
-    // Fetch recording metadata from Telnyx
-    let recordingDetails;
-    try {
-      recordingDetails = await telnyx.recordings.retrieve(recordingId);
-    } catch (err) {
-      console.warn(`Failed to retrieve recording metadata for ${recordingId}:`, err.message);
-      return null;
+    let recordingUrl;
+    let contentType = 'audio/wav';
+
+    // Prefer the download URL from the webhook payload if available.
+    const recordingUrls = recordingPayload.recording_urls
+      ? Array.isArray(recordingPayload.recording_urls)
+        ? recordingPayload.recording_urls
+        : [recordingPayload.recording_urls]
+      : [];
+
+    if (recordingUrls.length > 0) {
+      recordingUrl = recordingUrls[0]?.url || recordingUrls[0]?.download_url || recordingUrls[0]?.recording_url;
+      contentType = recordingUrls[0]?.mime_type || recordingUrls[0]?.content_type || contentType;
     }
 
-    if (!recordingDetails || !recordingDetails.channels) {
-      console.warn(`No recording channels found for recording ${recordingId}`);
-      return null;
+    if (!recordingUrl && recordingPayload.public_recording_urls) {
+      if (typeof recordingPayload.public_recording_urls === 'string') {
+        recordingUrl = recordingPayload.public_recording_urls;
+      } else if (recordingPayload.public_recording_urls?.url) {
+        recordingUrl = recordingPayload.public_recording_urls.url;
+      }
     }
 
-    // Download the first channel (or use primary if available)
-    const channelUrl = recordingDetails.channels[0]?.url;
-    if (!channelUrl) {
-      console.warn(`No download URL found in recording ${recordingId}`);
-      return null;
+    if (!recordingUrl) {
+      // Fallback to Telnyx API metadata retrieval.
+      let recordingDetails;
+      try {
+        recordingDetails = await telnyx.recordings.retrieve(recordingId);
+      } catch (err) {
+        console.warn(`Failed to retrieve recording metadata for ${recordingId}:`, err.message);
+        return null;
+      }
+
+      // Support Telnyx responses that use channels or recording_urls.
+      recordingUrl = recordingDetails?.channels?.[0]?.url;
+      contentType = recordingDetails?.channels?.[0]?.mime_type || contentType;
+      if (!recordingUrl && recordingDetails?.recording_urls?.length) {
+        recordingUrl = recordingDetails.recording_urls[0]?.url || recordingDetails.recording_urls[0]?.download_url;
+        contentType = recordingDetails.recording_urls[0]?.mime_type || recordingDetails.recording_urls[0]?.content_type || contentType;
+      }
+
+      if (!recordingUrl) {
+        console.warn(`No download URL found for recording ${recordingId}`);
+        return null;
+      }
     }
 
     // Download the recording from Telnyx
-    const response = await fetch(channelUrl);
+    const response = await fetch(recordingUrl);
     if (!response.ok) {
       throw new Error(`Failed to download recording: ${response.statusText}`);
     }
@@ -73,7 +99,7 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
       RECORDING_BUCKET,
       fileName,
       recordingBuffer,
-      'audio/wav'
+      contentType
     );
 
     console.log(`Recording uploaded successfully for call ${callId}: ${uploadResult.publicUrl}`);
