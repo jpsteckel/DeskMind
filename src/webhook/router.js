@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { handleCallInitiated } from './callInitiated.js';
 import { handleCallAnswered } from './callAnswered.js';
 import { handleCallEnded } from './callEnded.js';
+import { handleCallRecording } from './callRecording.js';
 
 const router = Router();
 
@@ -39,8 +40,18 @@ router.post('/', async (req, res) => {
         await handleCallEnded(payload);
         break;
 
+      case 'call.recording.saved':
+      case 'call.recording.finished':
+      case 'call.recording.completed':
+      case 'recording.finished':
+      case 'recording.saved':
+        await handleCallRecording(payload);
+        break;
+
       default:
-        // Silently ignore event types we don't handle
+        if (event_type?.includes('recording')) {
+          await handleCallRecording(payload);
+        }
         break;
     }
   } catch (err) {

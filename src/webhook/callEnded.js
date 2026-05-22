@@ -1,6 +1,6 @@
-import { getCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
+import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
 import { createCall, updateCall } from '../calls/callRepository.js';
-import { fetchAndUploadRecording, listCallRecordings } from '../telnyx/recordingService.js';
+import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
 import telnyx from '../telnyx/client.js';
 
 /**
@@ -68,48 +68,42 @@ export async function handleCallEnded(payload) {
 
     console.log(`Call record created: id=${callRecord.id}, client_id=${client_id}`);
 
-    // Fetch and upload recording
-    let recordingUrl = null;
-    try {
-      // Try using the recording_id from the webhook payload
-      let recId = recording_id;
-      
-      // If not provided in webhook, try to list recordings for this call
-      if (!recId) {
-        try {
-          const recordings = await listCallRecordings(call_control_id);
-          if (recordings.length > 0) {
-            recId = recordings[0].id;
-          }
-        } catch (err) {
-          console.warn(`Failed to list recordings for call ${call_control_id}: ${err.message}`);
-        }
-      }
+    // Store the call record ID so recording webhooks can attach the recording later.
+    const metadataUpdate = { call_id: callRecord.id };
+    if (recording_id) {
+      metadataUpdate.recording_id = recording_id;
+    }
+    await updateCallMetadata(call_control_id, metadataUpdate);
 
-      // Upload the recording if we found one
-      if (recId) {
-        recordingUrl = await fetchAndUploadRecording(call_control_id, callRecord.id, recId);
-      } else {
-        console.warn(`No recording ID found for call ${call_control_id}`);
+    // If the recording ID is already available on the call ended payload,
+    // upload it now. Otherwise wait for the recording webhook.
+    let recordingUrl = null;
+    if (recording_id) {
+      try {
+        recordingUrl = await fetchAndUploadRecording(call_control_id, callRecord.id, recording_id);
+        if (!recordingUrl) {
+          console.log(`Recording ${recording_id} exists but upload did not complete yet; waiting for webhook.`);
+        }
+      } catch (err) {
+        console.error(`Error processing recording for call ${callRecord.id}:`, err);
       }
-    } catch (err) {
-      console.error(`Error processing recording for call ${callRecord.id}:`, err);
-      // Recording errors don't fail the call record
+    } else {
+      console.log(`No recording ID available yet for call ${call_control_id}; will attach recording when webhook arrives.`);
     }
 
-    // If recording_url wasn't set by fetchAndUploadRecording, update it separately
     if (recordingUrl && !callRecord.recording_url) {
       await updateCall(callRecord.id, {
         recording_url: recordingUrl,
       });
+      await deleteCallMetadata(call_control_id);
     }
 
-    console.log(`Call processing complete: id=${callRecord.id}, recording=${recordingUrl || 'none'}`);
+    console.log(`Call processing complete: id=${callRecord.id}, recording=${recordingUrl || 'pending'}`);
   } catch (err) {
     console.error(`Error creating call record for call_control_id=${call_control_id}:`, err);
   } finally {
-    // Clean up Redis regardless of success or failure
-    await deleteCallMetadata(call_control_id);
+    // Keep metadata alive until the recording webhook arrives.
+    // The call record is created now, but recording upload may happen later.
   }
 }
 
