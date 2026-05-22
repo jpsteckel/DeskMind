@@ -12,6 +12,7 @@
 export function buildVariables(client) {
   return {
     // Core identity
+    number:              client.number,
     business_name:       client.business_name,
     assistant_name:      client.assistant_name   ?? 'Alex',
     tone:                client.tone             ?? 'friendly and professional',
@@ -25,12 +26,16 @@ export function buildVariables(client) {
     // Call handling
     transfer_number:     client.transfer_number  ?? '',
     transfer_trigger:    client.transfer_trigger ?? 'if the caller requests a manager or becomes upset',
-    hours_of_operation:  client.hours_of_operation ?? 'during business hours',
+    hours_of_operation:  client.hours ?? 'during business hours',
     voicemail_message:   client.voicemail_message  ?? '',
 
     // Business-specific knowledge
     address:             client.address           ?? '',
-    services_offered:    client.services_offered  ?? '',
+    city:                client.city              ?? '',
+    state:               client.state             ?? '',
+    zip:                 client.zip              ?? '',
+
+    services_offered:    client.service_types ?? '',
     faq_blob:            client.faq_blob          ?? '',
 
     // Integration endpoints (empty string disables the tool in the prompt)
