@@ -20,6 +20,7 @@ const callMetadataKey = (callControlId) => `call:${callControlId}`;
  *   - client_id (required)
  *   - caller_phone (required)
  *   - caller_name (optional)
+ *   - recording_id (optional) - Will be populated after recording starts
  * @returns {Promise<void>}
  */
 export async function storeCallMetadata(callControlId, metadata) {
@@ -46,6 +47,42 @@ export async function getCallMetadata(callControlId) {
   } catch (err) {
     console.warn(`Failed to retrieve call metadata from Redis: ${err.message}`);
     return null;
+  }
+}
+
+/**
+ * Updates call metadata with new information (e.g., recording_id).
+ * Preserves existing metadata and merges new values.
+ * 
+ * @param {string} callControlId - The Telnyx call_control_id.
+ * @param {object} updates - Partial metadata to merge.
+ * @returns {Promise<object|null>} The updated metadata.
+ */
+export async function updateCallMetadata(callControlId, updates) {
+  try {
+    const existing = await getCallMetadata(callControlId);
+    const merged = { ...existing, ...updates };
+    await storeCallMetadata(callControlId, merged);
+    return merged;
+  } catch (err) {
+    console.warn(`Failed to update call metadata in Redis: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * Deletes the call metadata from Redis.
+ * Called when a call ends to free up memory.
+ * 
+ * @param {string} callControlId - The Telnyx call_control_id.
+ * @returns {Promise<void>}
+ */
+export async function deleteCallMetadata(callControlId) {
+  try {
+    await redis.del(callMetadataKey(callControlId));
+  } catch (err) {
+    console.warn(`Failed to delete call metadata from Redis: ${err.message}`);
+    // Don't throw — cleanup failure shouldn't break the call
   }
 }
 

@@ -1,12 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import webhookRouter from './webhook/router.js';
+import { initializeRecordingSystem } from './db/recordingInit.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
 // Parse incoming JSON bodies from Telnyx webhooks
 app.use(express.json());
+await initializeRecordingSystem();
 
 // Mount the webhook router at /webhook
 // Set this URL in your Telnyx Call Control Application settings

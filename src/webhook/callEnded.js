@@ -1,5 +1,6 @@
 import { getCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
-import { createCall } from '../calls/callRepository.js';
+import { createCall, updateCall } from '../calls/callRepository.js';
+import { fetchAndUploadRecording, listCallRecordings } from '../telnyx/recordingService.js';
 import telnyx from '../telnyx/client.js';
 
 /**
@@ -7,7 +8,7 @@ import telnyx from '../telnyx/client.js';
  *
  * Fired when the AI assistant's conversation concludes (either the caller
  * hung up or the assistant ended the call). Records all call information
- * to the database including transcript, summary, and call metrics.
+ * to the database including transcript, summary, recording, and call metrics.
  *
  * @param {object} payload - The `data.payload` object from the Telnyx webhook body.
  * @returns {Promise<void>}
@@ -18,6 +19,7 @@ export async function handleCallEnded(payload) {
     conversation_id,  // Unique ID for the AI conversation session
     duration_secs = 0,
     from: callerPhone,
+    recording_id, // May be provided by Telnyx if recording webhooks are configured
   } = payload;
 
   console.log(`Conversation ended. call_control_id=${call_control_id}, conversation_id=${conversation_id}`);
@@ -52,7 +54,7 @@ export async function handleCallEnded(payload) {
       }
     }
 
-    // Create the call record with all available information
+    // Create the initial call record
     const callRecord = await createCall({
       client_id,
       caller_phone: finalCallerPhone,
@@ -65,6 +67,44 @@ export async function handleCallEnded(payload) {
     });
 
     console.log(`Call record created: id=${callRecord.id}, client_id=${client_id}`);
+
+    // Fetch and upload recording
+    let recordingUrl = null;
+    try {
+      // Try using the recording_id from the webhook payload
+      let recId = recording_id;
+      
+      // If not provided in webhook, try to list recordings for this call
+      if (!recId) {
+        try {
+          const recordings = await listCallRecordings(call_control_id);
+          if (recordings.length > 0) {
+            recId = recordings[0].id;
+          }
+        } catch (err) {
+          console.warn(`Failed to list recordings for call ${call_control_id}: ${err.message}`);
+        }
+      }
+
+      // Upload the recording if we found one
+      if (recId) {
+        recordingUrl = await fetchAndUploadRecording(call_control_id, callRecord.id, recId);
+      } else {
+        console.warn(`No recording ID found for call ${call_control_id}`);
+      }
+    } catch (err) {
+      console.error(`Error processing recording for call ${callRecord.id}:`, err);
+      // Recording errors don't fail the call record
+    }
+
+    // If recording_url wasn't set by fetchAndUploadRecording, update it separately
+    if (recordingUrl && !callRecord.recording_url) {
+      await updateCall(callRecord.id, {
+        recording_url: recordingUrl,
+      });
+    }
+
+    console.log(`Call processing complete: id=${callRecord.id}, recording=${recordingUrl || 'none'}`);
   } catch (err) {
     console.error(`Error creating call record for call_control_id=${call_control_id}:`, err);
   } finally {
