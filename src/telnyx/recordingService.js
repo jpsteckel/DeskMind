@@ -40,9 +40,27 @@ function toArray(value) {
   return [value];
 }
 
+function extractStringValue(value) {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') return value[0];
+  return null;
+}
+
 function extractUrlFromEntry(entry) {
-  if (!entry || typeof entry !== 'object') return null;
-  return entry.url || entry.download_url || entry.recording_url || entry.public_url || entry.public_recording_url || entry.href || entry.uri || entry.direct_url || entry.direct_uri || null;
+  if (entry == null) return null;
+  if (typeof entry === 'string') return entry;
+  if (typeof entry !== 'object') return null;
+
+  const directUrl = entry.url || entry.download_url || entry.recording_url || entry.public_url || entry.public_recording_url || entry.href || entry.uri || entry.direct_url || entry.direct_uri;
+  if (typeof directUrl === 'string') return directUrl;
+
+  for (const key of Object.keys(entry)) {
+    const nested = entry[key];
+    const candidate = extractStringValue(nested);
+    if (candidate) return candidate;
+  }
+
+  return null;
 }
 
 function extractFirstRecordingUrl(payload) {
