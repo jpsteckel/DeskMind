@@ -46,7 +46,14 @@ export async function handleCallAnalyzed(payload) {
     metadataKey: `call:${callControlId}`,
   };
 
-  if (!callMetadata) {
+  let callId = null;
+  let clientId = null;
+  let fallbackUsed = false;
+
+  if (callMetadata) {
+    callId = callMetadata.call_id;
+    clientId = callMetadata.client_id;
+  } else {
     try {
       diagnostics.metadataTtl = await redis.ttl(diagnostics.metadataKey);
       diagnostics.metadataExists = await redis.exists(diagnostics.metadataKey);
@@ -58,16 +65,24 @@ export async function handleCallAnalyzed(payload) {
       const callRecord = await getCallByConversationId(conversationId);
       diagnostics.callRecordFoundByConversationId = Boolean(callRecord);
       diagnostics.callRecordByConversationId = callRecord || undefined;
+      if (callRecord) {
+        callId = callRecord.id;
+        clientId = callRecord.client_id;
+        fallbackUsed = true;
+      }
     } catch (err) {
       diagnostics.callRecordLookupError = err?.message || err;
     }
+  }
 
-    console.warn(`${eventType}: no call metadata found for call_control_id=${callControlId}.`, diagnostics);
+  if (!callId) {
+    console.warn(`${eventType}: unable to resolve call_id for call_control_id=${callControlId}.`, diagnostics);
     return;
   }
 
-  const callId = callMetadata.call_id;
-  const clientId = callMetadata.client_id;
+  if (fallbackUsed) {
+    console.log(`${eventType}: falling back to call record lookup by conversation_id for call ${callId}`, diagnostics);
+  }
 
   if (!callId) {
     console.warn(`${eventType}: call metadata found but missing call_id.`, {
