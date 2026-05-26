@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import webhookRouter from './webhook/router.js';
 import { initializeRecordingSystem } from './db/recordingInit.js';
+import startConversationBackfillJob from './jobs/conversationBackfill.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -23,3 +24,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Start background backfill job to ensure conversation transcripts/summaries
+// are filled in when Telnyx delays providing them.
+startConversationBackfillJob();

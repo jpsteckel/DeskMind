@@ -177,6 +177,26 @@ export async function getClientTranscripts(clientId, limit = 100) {
 }
 
 /**
+ * Retrieves calls that have a conversation_id but missing transcript or summary.
+ * Optionally only returns calls older than `minAgeSeconds` to avoid racing with
+ * just-created rows.
+ */
+export async function getCallsNeedingBackfill(minAgeSeconds = 10, limit = 100) {
+  const cutoff = new Date(Date.now() - minAgeSeconds * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('calls')
+    .select('id, conversation_id, transcript, summary, updated_at')
+    .not('conversation_id', 'is', null)
+    .or('transcript.is.null,summary.is.null')
+    .lt('updated_at', cutoff)
+    .order('updated_at', { ascending: true })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to retrieve calls needing backfill: ${error.message}`);
+  return data || [];
+}
+
+/**
  * Retrieves summary statistics for a client.
  * 
  * @param {string} clientId - The UUID of the client.
