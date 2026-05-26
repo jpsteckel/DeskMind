@@ -47,7 +47,27 @@ export async function handleCallRecording(payload) {
   }
 
   if ((!callRecord.transcript || !callRecord.summary) && callMetadata.conversation_id) {
-    await updateCallWithConversationDetails(callId, callMetadata.conversation_id);
+    console.debug(`Attempting to backfill conversation details for call ${callId} (conversation=${callMetadata.conversation_id})`);
+    let backfilled = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await updateCallWithConversationDetails(callId, callMetadata.conversation_id);
+        if (result) {
+          console.log(`Backfill success for call ${callId} on attempt ${attempt}`);
+          backfilled = true;
+          break;
+        } else {
+          console.debug(`Backfill attempt ${attempt} returned no updates for call ${callId}`);
+        }
+      } catch (err) {
+        console.warn(`Backfill attempt ${attempt} failed for call ${callId}:`, err?.message || err);
+      }
+      // small delay before retrying
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    if (!backfilled) {
+      console.warn(`Unable to backfill conversation details for call ${callId} after 3 attempts.`);
+    }
   }
 
   if (callRecord.recording_url) {

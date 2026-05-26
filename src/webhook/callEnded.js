@@ -41,6 +41,7 @@ export async function handleCallEnded(payload) {
     let conversationDetails = {};
     if (conversation_id) {
       conversationDetails = (await fetchConversationDetails(conversation_id)) || {};
+      console.debug(`callEnded: conversationDetails for conversation_id=${conversation_id}:`, conversationDetails);
     }
 
     // Create the initial call record

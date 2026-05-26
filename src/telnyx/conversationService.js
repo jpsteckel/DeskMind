@@ -5,15 +5,17 @@ export async function fetchConversationDetails(conversationId) {
   if (!conversationId) return null;
 
   try {
+    console.debug(`fetchConversationDetails: retrieving conversation ${conversationId}`);
     const conversation = await telnyx.ai.conversations.retrieve(conversationId);
+    console.debug(`fetchConversationDetails: raw conversation for ${conversationId}:`, conversation);
     return {
-      transcript: conversation.messages ? formatTranscript(conversation.messages) : null,
-      summary: conversation.summary || null,
+      transcript: conversation?.messages ? formatTranscript(conversation.messages) : null,
+      summary: conversation?.summary || null,
       call_type: inferCallType(conversation),
       is_appointment_booked: detectAppointmentBooking(conversation),
     };
   } catch (err) {
-    console.warn(`Failed to retrieve conversation details for ${conversationId}:`, err.message);
+    console.warn(`Failed to retrieve conversation details for ${conversationId}:`, err?.message || err);
     return null;
   }
 }
@@ -33,9 +35,11 @@ export async function updateCallWithConversationDetails(callId, conversationId) 
   if (Object.keys(updates).length === 0) return null;
 
   try {
-    return await updateCall(callId, updates);
+    const updated = await updateCall(callId, updates);
+    console.log(`updateCallWithConversationDetails: call ${callId} updated with conversation ${conversationId}`);
+    return updated;
   } catch (err) {
-    console.warn(`Failed to update call ${callId} with conversation details:`, err.message);
+    console.warn(`Failed to update call ${callId} with conversation details:`, err?.message || err);
     return null;
   }
 }

@@ -43,7 +43,12 @@ export async function updateCall(callId, updates) {
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to update call record: ${error.message}`);
+  if (error) {
+    console.warn(`supabase.updateCall: failed to update call ${callId}`, { updates, error });
+    throw new Error(`Failed to update call record: ${error.message}`);
+  }
+
+  console.debug(`supabase.updateCall: updated call ${callId}`, { updates, data });
   return data;
 }
 
