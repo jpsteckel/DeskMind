@@ -73,6 +73,21 @@ export async function getCallById(callId) {
   return data;
 }
 
+export async function getCallByConversationId(conversationId) {
+  const { data, error } = await supabase
+    .from('calls')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(`Failed to retrieve call by conversation_id: ${error.message}`);
+  }
+
+  return data;
+}
+
 /**
  * Retrieves all call records for a given client.
  * 

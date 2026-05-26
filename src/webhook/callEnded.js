@@ -49,6 +49,7 @@ export async function handleCallEnded(payload) {
       client_id,
       caller_phone: finalCallerPhone,
       caller_name: callMetadata.caller_name || null,
+      conversation_id,
       transcript: conversationDetails.transcript || null,
       summary: conversationDetails.summary || null,
       call_type: conversationDetails.call_type || null,
