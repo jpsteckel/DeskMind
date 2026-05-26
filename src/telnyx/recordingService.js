@@ -113,6 +113,10 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
       contentType = payloadMatch.contentType;
     }
 
+    if (recordingUrl && recordingUrl.endsWith('.mp3') && contentType === 'audio/wav') {
+      contentType = 'audio/mpeg';
+    }
+
     if (!recordingUrl) {
       let recordingDetails;
       try {
@@ -146,9 +150,11 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
       throw new Error(`Failed to download recording: ${response.statusText}`);
     }
 
-    const recordingBuffer = await response.buffer();
+    const recordingArrayBuffer = await response.arrayBuffer();
+    const recordingBuffer = Buffer.from(recordingArrayBuffer);
     const timestamp = new Date().toISOString().split('T')[0];
-    const fileName = `${timestamp}/${callId}.wav`;
+    const extension = recordingUrl.endsWith('.mp3') ? 'mp3' : recordingUrl.endsWith('.wav') ? 'wav' : contentType.includes('mpeg') ? 'mp3' : 'wav';
+    const fileName = `${timestamp}/${callId}.${extension}`;
 
     const uploadResult = await uploadFile(
       RECORDING_BUCKET,
