@@ -1,7 +1,7 @@
 import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
 import { createCall, updateCall } from '../calls/callRepository.js';
 import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
-import telnyx from '../telnyx/client.js';
+import { fetchConversationDetails } from '../telnyx/conversationService.js';
 
 /**
  * Handles the call.conversation.ended webhook event from Telnyx.
@@ -40,18 +40,7 @@ export async function handleCallEnded(payload) {
     // Fetch conversation details from Telnyx (transcript, summary, etc.)
     let conversationDetails = {};
     if (conversation_id) {
-      try {
-        const conversation = await telnyx.ai.conversations.retrieve(conversation_id);
-        conversationDetails = {
-          transcript: conversation.messages ? formatTranscript(conversation.messages) : null,
-          summary: conversation.summary || null,
-          call_type: inferCallType(conversation),
-          is_appointment_booked: detectAppointmentBooking(conversation),
-        };
-      } catch (err) {
-        console.warn(`Failed to retrieve conversation details for ${conversation_id}:`, err.message);
-        // Continue without conversation details rather than failing the record
-      }
+      conversationDetails = (await fetchConversationDetails(conversation_id)) || {};
     }
 
     // Create the initial call record
@@ -68,8 +57,12 @@ export async function handleCallEnded(payload) {
 
     console.log(`Call record created: id=${callRecord.id}, client_id=${client_id}`);
 
-    // Store the call record ID so recording webhooks can attach the recording later.
-    const metadataUpdate = { call_id: callRecord.id };
+    // Store the call record ID and conversation ID so later webhooks can attach
+    // the recording and enrich the record if data was missing initially.
+    const metadataUpdate = {
+      call_id: callRecord.id,
+      conversation_id,
+    };
     if (recording_id) {
       metadataUpdate.recording_id = recording_id;
     }

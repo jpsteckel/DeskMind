@@ -1,5 +1,6 @@
 import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
 import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
+import { updateCallWithConversationDetails } from '../telnyx/conversationService.js';
 import { getCallById } from '../calls/callRepository.js';
 
 /**
@@ -43,6 +44,10 @@ export async function handleCallRecording(payload) {
   if (!callRecord) {
     console.warn(`Call record ${callId} not found for recording ${recordingId}.`);
     return;
+  }
+
+  if ((!callRecord.transcript || !callRecord.summary) && callMetadata.conversation_id) {
+    await updateCallWithConversationDetails(callId, callMetadata.conversation_id);
   }
 
   if (callRecord.recording_url) {

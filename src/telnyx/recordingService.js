@@ -153,8 +153,14 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
     const recordingArrayBuffer = await response.arrayBuffer();
     const recordingBuffer = Buffer.from(recordingArrayBuffer);
     const timestamp = new Date().toISOString().split('T')[0];
-    const extension = recordingUrl.endsWith('.mp3') ? 'mp3' : recordingUrl.endsWith('.wav') ? 'wav' : contentType.includes('mpeg') ? 'mp3' : 'wav';
-    const fileName = `${timestamp}/${callId}.${extension}`;
+    const extension = recordingUrl.endsWith('.mp3') || contentType === 'audio/mpeg'
+      ? 'mp3'
+      : recordingUrl.endsWith('.wav') || contentType === 'audio/wav'
+      ? 'wav'
+      : 'wav';
+    const fileName = recordingId
+      ? `${timestamp}/${callId}-${recordingId}.${extension}`
+      : `${timestamp}/${callId}.${extension}`;
 
     const uploadResult = await uploadFile(
       RECORDING_BUCKET,

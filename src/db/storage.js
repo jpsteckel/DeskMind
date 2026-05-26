@@ -17,7 +17,7 @@ export async function uploadFile(bucket, fileName, fileContent, contentType) {
       .from(bucket)
       .upload(fileName, fileContent, {
         contentType,
-        upsert: false, // Prevent overwriting if file exists
+        upsert: true, // Allow repeated recording uploads to reuse the same path
       });
 
     if (error) throw new Error(`Upload failed: ${error.message}`);
