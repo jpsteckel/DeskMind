@@ -3,6 +3,7 @@ import { handleCallInitiated } from './callInitiated.js';
 import { handleCallAnswered } from './callAnswered.js';
 import { handleCallEnded } from './callEnded.js';
 import { handleCallRecording } from './callRecording.js';
+import { handleCallAnalyzed } from './callAnalyzed.js';
 
 const router = Router();
 
@@ -46,6 +47,10 @@ router.post('/', async (req, res) => {
       case 'recording.finished':
       case 'recording.saved':
         await handleCallRecording(payload);
+        break;
+
+      case 'call.analyzed':
+        await handleCallAnalyzed(payload);
         break;
 
       default:
