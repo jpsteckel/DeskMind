@@ -17,7 +17,7 @@ export async function handleCallEnded(payload) {
   const {
     call_control_id,
     conversation_id,  // Unique ID for the AI conversation session
-    duration_secs = 0,
+    duration_secs,
     from: callerPhone,
     recording_id, // May be provided by Telnyx if recording webhooks are configured
   } = payload;

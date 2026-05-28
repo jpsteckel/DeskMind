@@ -8,8 +8,10 @@ export async function fetchConversationDetails(conversationId) {
     console.debug(`fetchConversationDetails: retrieving conversation ${conversationId}`);
     const conversation = await telnyx.ai.conversations.retrieve(conversationId);
     console.debug(`fetchConversationDetails: raw conversation for ${conversationId}:`, conversation);
+    
+    const messages = conversation?.messages?.data || conversation?.messages;
     return {
-      transcript: conversation?.messages ? formatTranscript(conversation.messages) : null,
+      transcript: Array.isArray(messages) ? formatTranscript(messages) : null,
       summary: conversation?.summary || null,
       call_type: inferCallType(conversation),
       is_appointment_booked: detectAppointmentBooking(conversation),
