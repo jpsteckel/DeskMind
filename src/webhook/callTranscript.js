@@ -6,7 +6,7 @@ import { updateCall } from '../calls/callRepository.js';
 export async function handleCallTranscript(payload) {
     console.debug(`handleCallTranscript received payload: ${JSON.stringify(payload, null, 2)}`);
     const callControlId = payload.call_control_id;
-    const transcript = JSON.parse(payload).transcript_data?.transcript ?? null;
+    const transcript = payload.transcript_data ?? payload.transcript_data?.transcript ?? null;
 
     if (!callControlId) {
         console.warn('Transcript webhook received without call_control_id. Unable to associate transcript.');
