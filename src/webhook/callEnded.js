@@ -17,7 +17,7 @@ export async function handleCallEnded(payload) {
   const {
     call_control_id,
     conversation_id,  // Unique ID for the AI conversation session
-    duration_sec,
+    duration_sec = 0,
     from: callerPhone,
     recording_id, // May be provided by Telnyx if recording webhooks are configured
   } = payload;
@@ -54,7 +54,7 @@ export async function handleCallEnded(payload) {
       summary: conversationDetails.summary || null,
       call_type: conversationDetails.call_type || null,
       is_appointment_booked: conversationDetails.is_appointment_booked || false,
-      duration_seconds: Math.floor(duration_sec || 0),
+      duration_seconds: Math.floor(duration_sec),
     });
 
     console.log(`Call record created: id=${callRecord.id}, client_id=${client_id}`);
