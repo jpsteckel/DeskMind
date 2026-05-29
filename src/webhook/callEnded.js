@@ -90,7 +90,6 @@ export async function handleCallEnded(payload) {
       await updateCall(callRecord.id, {
         recording_url: recordingUrl,
       });
-      await deleteCallMetadata(call_control_id);
     }
 
     console.log(`Call processing complete: id=${callRecord.id}, recording=${recordingUrl || 'pending'}`);

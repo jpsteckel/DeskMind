@@ -9,7 +9,7 @@ export async function handleCallMetadata(payload) {
     const callControlId = payload.call_control_id || payload.call?.call_control_id;
     const callMetadata = await getCallMetadata(callControlId);
     if (!callMetadata) {
-        console.warn(`No call metadata found for call_control_id=${callControlId}.`);
+        console.warn(`No call metadata found for call_control_id=${callControlId}. Cannot transcribe`);
         return;
     };
     const callId = callMetadata.call_id;
@@ -19,7 +19,8 @@ export async function handleCallMetadata(payload) {
         await updateCall(callMetadata.call_id, {
             transcript: transcript,
         });
-    } else {
         await deleteCallMetadata(callControlId);
+    } else {
+        console.warn(`Failed to transcribe call ${callControlId}.`);
     }
 }

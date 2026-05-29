@@ -48,7 +48,6 @@ export async function handleCallRecording(payload) {
 
   if (callRecord.recording_url) {
     console.log(`Call ${callId} already has recording URL, skipping duplicate upload.`);
-    await deleteCallMetadata(callControlId);
     return;
   }
 
