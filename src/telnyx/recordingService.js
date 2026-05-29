@@ -174,10 +174,10 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
       recording_url: uploadResult.publicUrl,
     });
 
-    return uploadResult.publicUrl, recordingUrl;
+    return [ uploadResult.publicUrl, recordingUrl ];
   } catch (err) {
     console.error(`Error fetching and uploading recording for call ${callId}:`, err);
-    return null, null;
+    return null;
   }
 }
 
