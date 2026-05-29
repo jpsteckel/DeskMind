@@ -80,7 +80,8 @@ export async function handleCallRecording(payload) {
   if (recordingUrl) {
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);
-    await getTranscript(callControlId, originalURL);
+    // ULTIMATELY SHOULD FETCH FROM THEIR SERVERS but getting errors rn
+    await getTranscript(callControlId, recordingUrl);
   } else {
     console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
   }
