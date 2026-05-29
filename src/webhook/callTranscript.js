@@ -23,12 +23,7 @@ export async function handleCallTranscript(payload) {
         return;
     }
 
-    const updatedMetadata = await updateCallMetadata(callControlId, { recording_id: recordingId });
-    const callId = updatedMetadata?.call_id || callMetadata.call_id;
-    if (!callId) {
-        console.log(`Recording ID ${recordingId} stored for call ${callControlId}, waiting for call record to be created.`);
-        return;
-    }
+    const callId = callMetadata.call_id;
 
     await updateCall(callId, {
         transcript,
