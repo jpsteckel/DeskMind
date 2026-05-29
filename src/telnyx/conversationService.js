@@ -6,11 +6,13 @@ export async function fetchConversationDetails(conversationId) {
 
   try {
     console.debug(`fetchConversationDetails: retrieving conversation ${conversationId}`);
-    const conversation = await telnyx.ai.conversations.retrieve(conversationId);
-    
-    const messages = conversation?.messages?.data || conversation?.messages;
+    const messages = [];
+    for await (const messageListResponse of client.ai.conversations.messages.list(conversationId)) {
+      console.log(messageListResponse.role);
+      messages.push(messageListResponse);
+    }
     return {
-      transcript: Array.isArray(messages) ? formatTranscript(messages) : null,
+      transcript: formatTranscript(messages),
       summary: conversation?.summary || null,
       call_type: inferCallType(conversation),
       is_appointment_booked: detectAppointmentBooking(conversation),
