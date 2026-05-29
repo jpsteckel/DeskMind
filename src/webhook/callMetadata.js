@@ -9,9 +9,16 @@ export async function handleCallMetadata(payload) {
     const callControlId = payload.call_control_id || payload.call?.call_control_id;
     const callMetadata = await getCallMetadata(callControlId);
     if (!callMetadata) {
-      console.warn(`No call metadata found for call_control_id=${callControlId}. Can't attach recording yet.`);
+        console.warn(`No call metadata found for call_control_id=${callControlId}. Can't attach recording yet.`);
         return;
     };
     const recordingUrl = callMetadata?.recording_url;
     const transcript = await getTranscript(callControlId, recordingUrl);
+    if (transcript) {
+        await updateCall(callMetadata.call_id, {
+            transcript: transcript,
+        });
+    } else {
+        await deleteCallMetadata(callControlId);
+    }
 }
