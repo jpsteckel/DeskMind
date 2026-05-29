@@ -1,6 +1,7 @@
 import telnyx from './client.js';
 import { uploadFile, ensureBucketExists } from '../db/storage.js';
 import { updateCall } from '../calls/callRepository.js';
+import { getTranscript } from './analyzeCall.js';
 
 const RECORDING_BUCKET = 'call-recordings';
 
@@ -146,6 +147,7 @@ export async function fetchAndUploadRecording(callControlId, callId, recordingId
     }
 
     const response = await fetch(recordingUrl);
+    await getTranscript(callControlId, recordingUrl);
     if (!response.ok) {
       throw new Error(`Failed to download recording: ${response.statusText}`);
     }

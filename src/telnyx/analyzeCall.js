@@ -9,6 +9,12 @@ export async function getTranscript(callControlId, recordingUrl) {
         response_format: 'verbose_json',
         model_config: { "smart_format": true, "punctuate": true, "diarize": true }
     })
-    console.log("transcript result for call_control_id=", callControlId, ":", JSON.stringify(transcript));
-    return transcript;
-}
+    console.log("transcript result for call_control_id=", callControlId, ":", JSON.stringify(transcript, null, 2));
+    const parsedTranscript = "";
+    for (i = 0; i < transcript.segments.length; i++) {
+        parsedTranscript += "Speaker [" + (transcript.segments[i].speaker == 0 ? "Assistant" : transcript.segments[i].speaker) + "] says: " + transcript.segments[i].text + "\n";
+    }
+
+    console.log("parsed transcript for call_control_id=", callControlId, ":", parsedTranscript);
+    return parsedTranscript;
+} 

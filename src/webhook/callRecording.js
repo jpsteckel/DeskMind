@@ -2,7 +2,6 @@ import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../call
 import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
 import { updateCallWithConversationDetails } from '../telnyx/conversationService.js';
 import { getCallById } from '../calls/callRepository.js';
-import { getTranscript } from '../telnyx/analyzeCall.js';
 /**
  * Handles recording-related webhook events from Telnyx.
  *
@@ -80,7 +79,6 @@ export async function handleCallRecording(payload) {
   if (recordingUrl) {
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);
-    await getTranscript(callControlId, recordingUrl);
   } else {
     console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
   }
