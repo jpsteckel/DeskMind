@@ -7,7 +7,6 @@ export async function fetchConversationDetails(conversationId) {
   try {
     console.debug(`fetchConversationDetails: retrieving conversation ${conversationId}`);
     const conversation = await telnyx.ai.conversations.retrieve(conversationId);
-    console.debug(`fetchConversationDetails: raw conversation for ${conversationId}:`, conversation);
     
     const messages = conversation?.messages?.data || conversation?.messages;
     return {

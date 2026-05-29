@@ -4,6 +4,7 @@ import { getCallById } from '../calls/callRepository.js';
 import { updateCall } from '../calls/callRepository.js';
 
 export async function handleCallTranscript(payload) {
+    console.debug(`handleCallTranscript received payload: ${JSON.stringify(payload, null, 2)}`);
     const callControlId = payload.call_control_id;
     const transcript = typeof payload.transcript_data === 'object' ? payload.transcript_data.transcript : NULL;
 
