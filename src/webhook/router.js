@@ -4,7 +4,6 @@ import { handleCallAnswered } from './callAnswered.js';
 import { handleCallEnded } from './callEnded.js';
 import { handleCallRecording } from './callRecording.js';
 import { handleCallAnalyzed } from './callAnalyzed.js';
-import { handleCallTranscript } from './callTranscript.js';
 
 const router = Router();
 
