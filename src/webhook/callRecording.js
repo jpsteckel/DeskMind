@@ -1,8 +1,8 @@
 import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
 import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
-import { updateCallWithConversationDetails } from '../telnyx/conversationService.js';
 import { getCallById } from '../calls/callRepository.js';
 import { getTranscript } from '../telnyx/analyzeCall.js';
+import { updateCall } from '../calls/callRepository.js';
 /**
  * Handles recording-related webhook events from Telnyx.
  *
@@ -46,30 +46,6 @@ export async function handleCallRecording(payload) {
     return;
   }
 
-  if ((!callRecord.transcript || !callRecord.summary) && callMetadata.conversation_id) {
-    console.debug(`Attempting to backfill conversation details for call ${callId} (conversation=${callMetadata.conversation_id})`);
-    let backfilled = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const result = await updateCallWithConversationDetails(callId, callMetadata.conversation_id);
-        if (result) {
-          console.log(`Backfill success for call ${callId} on attempt ${attempt}`);
-          backfilled = true;
-          break;
-        } else {
-          console.debug(`Backfill attempt ${attempt} returned no updates for call ${callId}`);
-        }
-      } catch (err) {
-        console.warn(`Backfill attempt ${attempt} failed for call ${callId}:`, err?.message || err);
-      }
-      // small delay before retrying
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-    if (!backfilled) {
-      console.warn(`Unable to backfill conversation details for call ${callId} after 3 attempts.`);
-    }
-  }
-
   if (callRecord.recording_url) {
     console.log(`Call ${callId} already has recording URL, skipping duplicate upload.`);
     await deleteCallMetadata(callControlId);
@@ -80,8 +56,6 @@ export async function handleCallRecording(payload) {
   if (recordingUrl) {
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);
-    // ULTIMATELY SHOULD FETCH FROM THEIR SERVERS but getting errors rn
-    await getTranscript(callControlId, recordingUrl);
   } else {
     console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
   }

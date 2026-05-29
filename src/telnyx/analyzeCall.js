@@ -9,7 +9,7 @@ export async function getTranscript(callControlId, recordingUrl) {
         response_format: 'verbose_json',
         model_config: { "smart_format": true, "punctuate": true, "diarize": true }
     })
-    console.log("transcript result for call_control_id=", callControlId, ":", JSON.stringify(transcript, null, 2));
+    console.log("transcript result for call_control_id=", callControlId, ":", JSON.stringify(transcript));
     let parsedTranscript = "";
     const segments = transcript.data?.segments || transcript.segments || [];
     for (let i = 0; i < segments.length; i++) {

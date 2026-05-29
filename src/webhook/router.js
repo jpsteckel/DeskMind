@@ -4,6 +4,7 @@ import { handleCallAnswered } from './callAnswered.js';
 import { handleCallEnded } from './callEnded.js';
 import { handleCallRecording } from './callRecording.js';
 import { handleCallAnalyzed } from './callAnalyzed.js';
+import { handleCallMetadata } from './callMetadata.js';
 
 const router = Router();
 
@@ -47,6 +48,7 @@ router.post('/', async (req, res) => {
       case 'recording.finished':
       case 'recording.saved':
         await handleCallRecording(payload);
+        await handleCallMetadata(payload);
         break;
       
       case 'call.analyzed':
