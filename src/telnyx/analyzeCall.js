@@ -2,6 +2,10 @@ import telnyx from './client.js';
 import { updateCall } from '../calls/callRepository.js';
 
 export async function getTranscript(callControlId, recordingUrl) {
+    if (!recordingUrl) {
+        console.warn(`No recording URL available for call_control_id=${callControlId}. Cannot transcribe.`);
+        return null;
+    }
     const transcript = await telnyx.ai.audio.transcribe({
         model: 'deepgram/nova-3',
         file_url: recordingUrl,
