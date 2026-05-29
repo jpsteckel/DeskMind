@@ -50,10 +50,6 @@ router.post('/', async (req, res) => {
         await handleCallRecording(payload);
         break;
       
-      case 'call.transcription':
-        await handleCallTranscript(payload);
-        break;
-
       case 'call.analyzed':
         await handleCallAnalyzed(payload);
         break;

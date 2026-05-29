@@ -33,6 +33,4 @@ export async function startAssistant(callControlId, dynamicVariables) {
       dynamic_variables: dynamicVariables,
     }
   });
-  
-  await telnyx.calls.actions.startTranscription(callControlId);
 }
