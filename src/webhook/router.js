@@ -48,11 +48,11 @@ router.post('/', async (req, res) => {
       case 'recording.finished':
       case 'recording.saved':
         await handleCallRecording(payload);
-        await handleCallMetadata(payload);
         break;
       
       case 'call.analyzed':
-        await handleCallAnalyzed(payload);
+        // await handleCallAnalyzed(payload);
+        await handleCallMetadata(payload)
         break;
 
       default:
