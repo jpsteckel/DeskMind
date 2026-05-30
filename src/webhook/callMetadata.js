@@ -11,7 +11,9 @@ export async function handleCallMetadata(payload) {
     if (!callMetadata) {
         console.warn(`No call metadata found for call_control_id=${callControlId}. Cannot transcribe`);
         return;
-    };
+    } else {
+        console.debug(`Call metadata found for call_control_id=${callControlId}:`, JSON.stringify(callMetadata));
+    }
     const callId = callMetadata.call_id;
     if (!callId) {
         console.warn(`No call ID found for call_control_id=${callControlId}. Cannot transcribe.`);
