@@ -17,9 +17,9 @@ export async function getTranscript(callControlId, recordingUrl) {
     let parsedTranscript = "";
     const segments = transcript.data?.segments || transcript.segments || [];
     for (let i = 0; i < segments.length; i++) {
-        parsedTranscript += "Speaker [" + (segments[i].speaker === 0 ? "Assistant" : segments[i].speaker) + "] says: " + segments[i].text + "\n";
+        parsedTranscript += "Speaker [" + (segments[i].speaker === 0 ? "Assistant" : segments[i].speaker) + "] says: " + segments[i].text + "/";
     }
 
-    console.log("parsed transcript for call_control_id=", callControlId, ":", parsedTranscript);
+    console.log("parsed transcript for call_control_id=", callControlId, ": ", parsedTranscript);
     return parsedTranscript;
 } 

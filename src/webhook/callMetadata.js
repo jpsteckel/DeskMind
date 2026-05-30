@@ -13,10 +13,14 @@ export async function handleCallMetadata(payload) {
         return;
     };
     const callId = callMetadata.call_id;
+    if (!callId) {
+        console.warn(`No call ID found for call_control_id=${callControlId}. Cannot transcribe.`);
+        return;
+    }
     const recordingUrl = getCallById(callId)?.recording_url;
     const transcript = await getTranscript(callControlId, recordingUrl);
     if (transcript) {
-        await updateCall(callMetadata.call_id, {
+        await updateCall(callId, {
             transcript: transcript,
         });
         await deleteCallMetadata(callControlId);

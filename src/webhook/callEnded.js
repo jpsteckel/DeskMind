@@ -1,4 +1,4 @@
-import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
+import { getCallMetadata, updateCallMetadata } from '../calls/callCache.js';
 import { createCall, updateCall } from '../calls/callRepository.js';
 import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
 import { fetchConversationDetails } from '../telnyx/conversationService.js';
