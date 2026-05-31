@@ -53,6 +53,8 @@ export async function handleCallRecording(payload) {
 
   const [ recordingUrl, originalURL ] = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
   if (recordingUrl) {
+    const transcript = await getTranscript(callControlId, recordingUrl);
+    await updateCall(callId, { transcript });
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
   } else {
     console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);

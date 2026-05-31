@@ -52,7 +52,6 @@ router.post('/', async (req, res) => {
       
       case 'call.analyzed':
         // await handleCallAnalyzed(payload);
-        await handleCallMetadata(payload)
         break;
 
       default:
