@@ -1,6 +1,7 @@
 import telnyx from './client.js';
 import { updateCall } from '../calls/callRepository.js';
 
+// called in callRecording handler after uploading the recording
 export async function getTranscript(callControlId, recordingUrl) {
     if (!recordingUrl) {
         console.warn(`No recording URL available for call_control_id=${callControlId}. Cannot transcribe.`);
@@ -17,7 +18,7 @@ export async function getTranscript(callControlId, recordingUrl) {
     let parsedTranscript = "";
     const segments = transcript.data?.segments || transcript.segments || [];
     for (let i = 0; i < segments.length; i++) {
-        parsedTranscript += "Speaker [" + (segments[i].speaker === 0 ? "Assistant" : segments[i].speaker) + "] says: " + segments[i].text + "/";
+        parsedTranscript += "Speaker [" + (segments[i].speaker === 0 ? "Assistant" : segments[i].speaker) + "] says: " + segments[i].text + "\n";
     }
 
     console.log("parsed transcript for call_control_id=", callControlId, ": ", parsedTranscript);

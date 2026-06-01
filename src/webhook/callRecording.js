@@ -3,6 +3,7 @@ import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
 import { getCallById } from '../calls/callRepository.js';
 import { getTranscript } from '../telnyx/analyzeCall.js';
 import { updateCall } from '../calls/callRepository.js';
+import { summarizeTranscript } from '../telnyx/callProcessingService.js';
 /**
  * Handles recording-related webhook events from Telnyx.
  *
@@ -54,7 +55,8 @@ export async function handleCallRecording(payload) {
   const [ recordingUrl, originalURL ] = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
   if (recordingUrl) {
     const transcript = await getTranscript(callControlId, recordingUrl);
-    await updateCall(callId, { transcript });
+    const summary = await summarizeTranscript(transcript);
+    await updateCall(callId, { transcript, summary });
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
   } else {
     console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
