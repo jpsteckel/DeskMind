@@ -65,7 +65,7 @@ export async function handleCallRecording(payload) {
       caller_name: entities.clientName,
       caller_email: entities.clientEmail,
       business_name: entities.companyName,
-      call_type: callType,
+      call_type: callType.callType,
       is_appointment_booked: booking.isAppointmentBooked,
       appointment_date: booking.appointmentDate,
       appointment_time: booking.appointmentTime,
