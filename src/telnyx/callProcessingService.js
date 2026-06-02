@@ -168,6 +168,22 @@ ${transcript}
 `;
   },
 
+  getBooked: (transcript) => `
+Determine if an appointment was booked during this call. If so, extract the date, time, and service.
+Return ONLY a JSON object:
+{
+  "isAppointmentBooked": true or false,
+  "appointmentDate": "YYYY-MM-DD or null",
+  "appointmentTime": "HH:MM (24h) or null",
+  "serviceBooked": "Description of service booked or null"
+}
+
+TRANSCRIPT:
+"""
+${transcript}
+"""
+`,
+
   // --------------------------------------------------------------------------
   // Sentiment & urgency analysis
   // --------------------------------------------------------------------------
@@ -308,6 +324,17 @@ export async function extractEntities(transcript) {
  */
 export async function classifyCall(transcript, options = {}) {
   const prompt = PROMPTS.classifyCall(transcript, options);
+  return callGemini(prompt);
+}
+
+/**
+ * Determine if an appointment was booked during the call.
+ *
+ * @param {string} transcript
+ * @returns {Promise<Object>} Booking information
+ */
+export async function getBooked(transcript) {
+  const prompt = PROMPTS.getBooked(transcript);
   return callGemini(prompt);
 }
 
