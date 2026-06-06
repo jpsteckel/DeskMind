@@ -1,4 +1,4 @@
-import { answerCall } from '../telnyx/answerCall.js';
+import { answerCall, transferCall } from '../telnyx/answerCall.js';
 import { startAssistant } from '../telnyx/startAssistant.js';
 import { getCachedClient } from '../clients/clientCache.js';
 import { buildVariables } from '../assistant/buildVariables.js';
@@ -35,6 +35,17 @@ export async function handleCallInitiated(payload) {
     // No client record found for this number — log and hang up gracefully.
     // In production you may want to play an error message before hanging up.
     console.warn(`No client found for number: ${dialedNumber}`);
+    return;
+  }
+
+  // If the receptionist is disabled, transfer the call immediately.
+  if (client.active === false) {
+    if (!client.transfer_number) {
+      console.warn(`Client ${client.id} is inactive but has no transfer number configured.`);
+      return;
+    }
+
+    await transferCall(call_control_id, client.transfer_number);
     return;
   }
 
