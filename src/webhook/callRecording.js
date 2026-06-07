@@ -3,7 +3,7 @@ import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
 import { getCallById } from '../calls/callRepository.js';
 import { getTranscript } from '../telnyx/analyzeCall.js';
 import { updateCall } from '../calls/callRepository.js';
-import { summarizeTranscript, extractEntities, classifyCall, getBooked } from '../telnyx/callProcessingService.js';
+import { processTranscript, summarizeTranscript, extractEntities, classifyCall, getBooked, analyzeSentiment, extractActionItems } from '../telnyx/callProcessingService.js';
 /**
  * Handles recording-related webhook events from Telnyx.
  *
@@ -55,21 +55,28 @@ export async function handleCallRecording(payload) {
   const [recordingUrl, originalURL] = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
   if (recordingUrl) {
     const transcript = await getTranscript(callControlId, recordingUrl);
-    const summary = await summarizeTranscript(transcript);
-    const entities = await extractEntities(transcript);
-    const callType = await classifyCall(transcript);
-    const booking = await getBooked(transcript);
+    const processedTranscript = await processTranscript(transcript);
     await updateCall(callId, {
       transcript,
-      summary: summary.summary,
-      caller_name: entities.clientName,
-      caller_email: entities.clientEmail,
-      business_name: entities.companyName,
-      call_type: callType.callType,
-      is_appointment_booked: booking.isAppointmentBooked,
-      appointment_date: booking.appointmentDate,
-      appointment_time: booking.appointmentTime,
-      service_booked: booking.serviceBooked
+      summary: processedTranscript.summary,
+      caller_name: processedTranscript.clientName,
+      caller_email: processedTranscript.clientEmail,
+      business_name: processedTranscript.companyName,
+      call_type: processedTranscript.callType,
+      is_appointment_booked: processedTranscript.isAppointmentBooked,
+      appointment_date: processedTranscript.appointmentDate,
+      appointment_time: processedTranscript.appointmentTime,
+      service_booked: processedTranscript.serviceBooked,
+
+      /* add these to calls database before running */
+      sentiment: processedTranscript.sentiment,
+      urgency: processedTranscript.urgency,
+      follow_up_required: processedTranscript.followUpRequired,
+      resolution_status: processedTranscript.resolutionStatus,
+      resolution: processedTranscript.resolution,
+      resolution_status: processedTranscript.resolutionStatus,
+      tags: processedTranscript.tags,
+      key_issues: processedTranscript.keyIssues,
     });
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);

@@ -100,6 +100,10 @@ Return ONLY a valid JSON object with these fields (no markdown, no explanation):
   "resolutionStatus": "One of: Resolved, Unresolved, Pending, Escalated",
   "followUpRequired": true or false,
   "followUpActions": ["Array of specific follow-up tasks required. Empty array if none."],
+  "isAppointmentBooked": true or false,
+  "appointmentDate": "YYYY-MM-DD or null",
+  "appointmentTime": "HH:MM (24h) or null",
+  "serviceBooked": "Description of service booked or null"
   "sentiment": "Overall customer sentiment — one of: ${sentimentOptions.join(", ")}",
   "urgency": "One of: Low, Medium, High, Critical",
   "tags": ["Array of 2-5 descriptive tags for categorizing/searching this call"]${customFields}
@@ -275,10 +279,27 @@ async function callGemini(prompt) {
  *
  * @param {string} transcript - Raw call transcript text
  * @param {Object} options - Optional customization
- * @param {string[]} options.callTypes - Override the list of valid call types
- * @param {string[]} options.sentimentOptions - Override sentiment labels
- * @param {string} options.customFields - Extra JSON fields to append to the prompt
- * @returns {Promise<Object>} Full structured call data
+ * @returns {Promise<{
+ *   clientName: string|null,
+ *   clientPhone: string|null,
+ *   clientEmail: string|null,
+ *   agentName: string|null,
+ *   callType: string,
+ *   callDurationEstimate: string|null,
+ *   summary: string,
+ *   keyIssues: string[],
+ *   resolution: string|null,
+ *   resolutionStatus: string,
+ *   followUpRequired: boolean,
+ *   followUpActions: string[],
+ *   isAppointmentBooked: boolean,
+ *   appointmentDate: string|null,
+ *   appointmentTime: string|null,
+ *   serviceBooked: string|null
+ *   sentiment: string,
+ *   urgency: string,
+ *   tags: string[]
+ * }>} Full structured call data
  */
 export async function processTranscript(transcript, options = {}) {
   if (!transcript || typeof transcript !== "string" || !transcript.trim()) {
@@ -296,7 +317,7 @@ export async function processTranscript(transcript, options = {}) {
  * @param {Object} options
  * @param {string} options.summaryLength - e.g. "1-2 sentences" (default: "2-4 sentences")
  * @param {string} options.summaryFocus - What to focus the summary on
- * @returns {Promise<{summary: string}>}
+ * @returns {Promise<{ summary: string }>}
  */
 export async function summarizeTranscript(transcript, options = {}) {
   const prompt = PROMPTS.summaryOnly(transcript, options);
@@ -307,7 +328,15 @@ export async function summarizeTranscript(transcript, options = {}) {
  * Extract named entities: client name, agent, contact info, account numbers.
  *
  * @param {string} transcript
- * @returns {Promise<Object>} Entity fields
+ * @returns {Promise<{
+ *   clientName: string|null,
+ *   clientPhone: string|null,
+ *   clientEmail: string|null,
+ *   agentName: string|null,
+ *   companyName: string|null,
+ *   accountNumber: string|null,
+ *   orderNumber: string|null
+ * }>} Entity fields
  */
 export async function extractEntities(transcript) {
   const prompt = PROMPTS.extractEntities(transcript);
@@ -319,8 +348,7 @@ export async function extractEntities(transcript) {
  *
  * @param {string} transcript
  * @param {Object} options
- * @param {string[]} options.callTypes - Override valid call types
- * @returns {Promise<{callType: string, confidence: string, reason: string}>}
+ * @returns {Promise<{ callType: string, confidence: string, reason: string }>}
  */
 export async function classifyCall(transcript, options = {}) {
   const prompt = PROMPTS.classifyCall(transcript, options);
@@ -331,7 +359,12 @@ export async function classifyCall(transcript, options = {}) {
  * Determine if an appointment was booked during the call.
  *
  * @param {string} transcript
- * @returns {Promise<Object>} Booking information
+ * @returns {Promise<{
+ *   isAppointmentBooked: boolean,
+ *   appointmentDate: string|null,
+ *   appointmentTime: string|null,
+ *   serviceBooked: string|null
+ * }>} Booking information
  */
 export async function getBooked(transcript) {
   const prompt = PROMPTS.getBooked(transcript);
@@ -343,8 +376,12 @@ export async function getBooked(transcript) {
  *
  * @param {string} transcript
  * @param {Object} options
- * @param {string[]} options.sentimentOptions - Override sentiment labels
- * @returns {Promise<Object>} Sentiment analysis result
+ * @returns {Promise<{
+ *   sentiment: string,
+ *   urgency: string,
+ *   emotionalIndicators: string[],
+ *   customerSatisfactionScore: string
+ * }>} Sentiment analysis result
  */
 export async function analyzeSentiment(transcript, options = {}) {
   const prompt = PROMPTS.analyzeSentiment(transcript, options);
@@ -355,7 +392,16 @@ export async function analyzeSentiment(transcript, options = {}) {
  * Extract follow-up action items and resolution status.
  *
  * @param {string} transcript
- * @returns {Promise<Object>} Action items and resolution info
+ * @returns {Promise<{
+ *   followUpRequired: boolean,
+ *   resolutionStatus: string,
+ *   resolution: string|null,
+ *   actionItems: Array<{
+ *     task: string,
+ *     assignedTo: string,
+ *     deadline: string|null
+ *   }>
+ * }>} Action items and resolution info
  */
 export async function extractActionItems(transcript) {
   const prompt = PROMPTS.extractActionItems(transcript);
