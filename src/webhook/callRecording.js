@@ -74,9 +74,9 @@ export async function handleCallRecording(payload) {
       follow_up_required: processedTranscript.followUpRequired,
       resolution_status: processedTranscript.resolutionStatus,
       resolution: processedTranscript.resolution,
-      resolution_status: processedTranscript.resolutionStatus,
       tags: processedTranscript.tags,
       key_issues: processedTranscript.keyIssues,
+      follow_up_tasks: processedTranscript.followUpActions,
     });
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
     await deleteCallMetadata(callControlId);
