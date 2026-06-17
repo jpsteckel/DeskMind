@@ -58,6 +58,16 @@ export async function updateCallWithConversationDetails(callId, conversationId) 
 export async function processAndScheduleCallCalendarEvent(callId, transcript, calendarTokens) {
   if (!transcript || !calendarTokens) return null;
 
+  // Ensure the transcript is always saved to the call record as soon as it's available.
+  // This addresses the issue of the call row remaining blank if subsequent Gemini processing fails.
+  try {
+    await updateCall(callId, { transcript: transcript });
+    console.log(`processAndScheduleCallCalendarEvent: transcript saved for call ${callId}.`);
+  } catch (err) {
+    console.error(`processAndScheduleCallCalendarEvent: Failed to save transcript for call ${callId}:`, err.message);
+    // Continue attempting calendar event creation even if transcript saving failed, as it's a separate concern.
+  }
+
   try {
     const event = await createAndScheduleCalendarEvent(transcript, calendarTokens);
     if (event) {
