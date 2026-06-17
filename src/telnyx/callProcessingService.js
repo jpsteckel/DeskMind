@@ -239,6 +239,32 @@ ${transcript}
     if (!promptTemplate) throw new Error("custom prompt requires a promptTemplate string");
     return promptTemplate.replace("{transcript}", transcript);
   },
+
+  // --------------------------------------------------------------------------
+  // Google Calendar Event Extraction
+  // --------------------------------------------------------------------------
+  calendarEvent: (transcript, options = {}) => {
+    const now = options.now || new Date().toISOString();
+    return `
+You are an expert assistant. Analyze the call transcript and extract details for a Google Calendar event ONLY if an appointment or follow-up was scheduled or requested.
+
+The current date and time is ${now}. Resolve relative dates (like "tomorrow") based on this.
+If no specific appointment/follow-up is mentioned, return exactly null.
+
+Return ONLY a JSON object compatible with the Google Calendar API:
+{
+  "summary": "Title of the meeting",
+  "description": "Summary of the discussion and appointment purpose.",
+  "start": { "dateTime": "ISO 8601 string", "timeZone": "UTC" },
+  "end": { "dateTime": "ISO 8601 string (assume 30m if not specified)", "timeZone": "UTC" }
+}
+
+TRANSCRIPT:
+"""
+${transcript}
+"""
+`;
+  },
 };
 
 // =============================================================================
@@ -425,6 +451,51 @@ export async function extractActionItems(transcript) {
 export async function processWithCustomPrompt(transcript, promptTemplate) {
   const prompt = PROMPTS.custom(transcript, promptTemplate);
   return callGemini(prompt);
+}
+
+/**
+ * Analyzes a transcript for appointment details and posts it to the user's Google Calendar.
+ * 
+ * @param {string} transcript - The transcribed call text.
+ * @param {Object} tokens - Object containing Google OAuth2 tokens (accessToken, refreshToken).
+ * @param {Object} options - Optional parameters (e.g., now for relative date resolution).
+ * @returns {Promise<Object|null>} The created Google Calendar event or null if none created.
+ */
+export async function createAndScheduleCalendarEvent(transcript, tokens, options = {}) {
+  if (!tokens?.accessToken) {
+    throw new Error("Missing accessToken for calendar integration.");
+  }
+
+  // 1. Build the event data using Gemini
+  const prompt = PROMPTS.calendarEvent(transcript, options);
+  const eventData = await callGemini(prompt);
+
+  if (!eventData) {
+    console.log("[callProcessingService] No calendar event detected in transcript.");
+    return null;
+  }
+
+  // 2. Push to Google Calendar API
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${tokens.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(eventData),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    if (response.status === 401) {
+      throw new Error("Google Calendar authentication failed (401). Token may be expired.");
+    }
+    throw new Error(`Failed to create Google Calendar event: ${response.status} ${errorBody}`);
+  }
+
+  const result = await response.json();
+  console.log(`[callProcessingService] Calendar event created successfully: ${result.htmlLink}`);
+  return result;
 }
 
 /**

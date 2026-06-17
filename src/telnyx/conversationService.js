@@ -1,5 +1,6 @@
 import telnyx from './client.js';
 import { updateCall } from '../calls/callRepository.js';
+import { createAndScheduleCalendarEvent } from './callProcessingService.js';
 
 export async function fetchConversationDetails(conversationId) {
   if (!conversationId) return null;
@@ -7,7 +8,7 @@ export async function fetchConversationDetails(conversationId) {
   try {
     console.debug(`fetchConversationDetails: retrieving conversation ${conversationId}`);
     const messages = [];
-    for await (const messageListResponse of client.ai.conversations.messages.list(conversationId)) {
+    for await (const messageListResponse of telnyx.ai.conversations.messages.list(conversationId)) {
       console.log(messageListResponse.role);
       messages.push(messageListResponse);
     }
@@ -43,6 +44,29 @@ export async function updateCallWithConversationDetails(callId, conversationId) 
     return updated;
   } catch (err) {
     console.warn(`Failed to update call ${callId} with conversation details:`, err?.message || err);
+    return null;
+  }
+}
+
+/**
+ * Orchestrates transcript processing to extract an appointment and push it to the client's Google Calendar.
+ * 
+ * @param {string} callId - UUID of the call record
+ * @param {string} transcript - The transcribed text
+ * @param {Object} calendarTokens - The client's OAuth2 tokens from the calendar_tokens column
+ */
+export async function processAndScheduleCallCalendarEvent(callId, transcript, calendarTokens) {
+  if (!transcript || !calendarTokens) return null;
+
+  try {
+    const event = await createAndScheduleCalendarEvent(transcript, calendarTokens);
+    if (event) {
+      await updateCall(callId, { calendar_event_id: event.id });
+      console.log(`processAndScheduleCallCalendarEvent: call ${callId} updated with calendar event ${event.id}`);
+    }
+    return event;
+  } catch (err) {
+    console.warn(`Failed to process calendar event for call ${callId}:`, err.message);
     return null;
   }
 }
