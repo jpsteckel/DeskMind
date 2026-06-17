@@ -1,5 +1,5 @@
 import { getCallMetadata, updateCallMetadata, deleteCallMetadata } from '../calls/callCache.js';
-import { fetchAndUploadRecording } from '../telnyx/recordingService.js';
+import { fetchAndUploadRecording, scheduleCallCalendarEvent } from '../telnyx/recordingService.js';
 import { getCallById } from '../calls/callRepository.js';
 import { getTranscript } from '../telnyx/analyzeCall.js';
 import { updateCall } from '../calls/callRepository.js';
@@ -47,16 +47,38 @@ export async function handleCallRecording(payload) {
     return;
   }
 
-  if (callRecord.recording_url) {
-    console.log(`Call ${callId} already has recording URL, skipping duplicate upload.`);
+  const existingTranscript = callRecord.transcript;
+  if (callRecord.recording_url && existingTranscript) {
+    console.log(`Call ${callId} already has recording URL and transcript, skipping duplicate upload and transcription.`);
+    await deleteCallMetadata(callControlId);
     return;
   }
 
-  const [recordingUrl, originalURL] = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
-  if (recordingUrl) {
-    const transcript = await getTranscript(callControlId, recordingUrl);
+  let recordingUrl = callRecord.recording_url;
+  if (!recordingUrl) {
+    const uploadResult = await fetchAndUploadRecording(callControlId, callId, recordingId, payload);
+    if (!uploadResult) {
+      console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
+      return;
+    }
+    recordingUrl = uploadResult[0];
+  }
+
+  if (!recordingUrl) {
+    console.warn(`No recording URL available after upload for call ${callId}.`);
+    return;
+  }
+
+  const transcript = existingTranscript || await getTranscript(callControlId, recordingUrl);
+  if (!transcript) {
+    console.warn(`Transcription failed or returned empty for call ${callId}.`);
+    return;
+  }
+
+  let updatedCallRecord = callRecord;
+  if (!existingTranscript) {
     const processedTranscript = await processTranscript(transcript);
-    await updateCall(callId, {
+    updatedCallRecord = await updateCall(callId, {
       transcript,
       summary: processedTranscript.summary,
       caller_name: processedTranscript.clientName,
@@ -67,8 +89,6 @@ export async function handleCallRecording(payload) {
       appointment_date: processedTranscript.appointmentDate,
       appointment_time: processedTranscript.appointmentTime,
       service_booked: processedTranscript.serviceBooked,
-
-      /* add these to calls database before running */
       sentiment: processedTranscript.sentiment,
       urgency: processedTranscript.urgency,
       follow_up_required: processedTranscript.followUpRequired,
@@ -79,8 +99,14 @@ export async function handleCallRecording(payload) {
       follow_up_tasks: processedTranscript.followUpActions,
     });
     console.log(`Recording attached to call ${callId}: ${recordingUrl}`);
-    await deleteCallMetadata(callControlId);
   } else {
-    console.warn(`Failed to attach recording ${recordingId} for call ${callId}. Recording payload keys: ${Object.keys(payload).join(', ')}`);
+    console.log(`Call ${callId} already has transcript; skipping transcription but keeping existing recording URL.`);
   }
+
+  const calendarTokens = updatedCallRecord.calendar_tokens || callMetadata?.calendar_tokens;
+  if (!updatedCallRecord.calendar_event_id && calendarTokens) {
+    await scheduleCallCalendarEvent(callId, transcript, calendarTokens);
+  }
+
+  await deleteCallMetadata(callControlId);
 }

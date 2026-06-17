@@ -1,6 +1,7 @@
 import telnyx from './client.js';
 import { uploadFile, ensureBucketExists } from '../db/storage.js';
 import { updateCall } from '../calls/callRepository.js';
+import { createAndScheduleCalendarEvent } from './callProcessingService.js';
 
 const RECORDING_BUCKET = 'call-recordings';
 
@@ -201,6 +202,24 @@ export async function getRecordingMetadata(recordingId) {
   } catch (err) {
     console.error(`Failed to retrieve recording metadata for ${recordingId}:`, err);
     throw err;
+  }
+}
+
+export async function scheduleCallCalendarEvent(callId, transcript, calendarTokens) {
+  if (!transcript || !calendarTokens) {
+    return null;
+  }
+
+  try {
+    const event = await createAndScheduleCalendarEvent(transcript, calendarTokens);
+    if (event) {
+      await updateCall(callId, { calendar_event_id: event.id });
+      console.log(`scheduleCallCalendarEvent: call ${callId} updated with calendar event ${event.id}`);
+    }
+    return event;
+  } catch (err) {
+    console.warn(`scheduleCallCalendarEvent: failed to create calendar event for call ${callId}:`, err?.message || err);
+    return null;
   }
 }
 
