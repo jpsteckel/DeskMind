@@ -29,10 +29,6 @@ CREATE TABLE clients (
   services_offered     TEXT,           -- Short comma-separated list or paragraph
   faq_blob             TEXT,           -- Compact Q&A block injected into system prompt
 
-  -- Integration endpoints (optional per client)
-  booking_webhook_url  TEXT,           -- Calendar/scheduling webhook
-  crm_webhook_url      TEXT,           -- CRM logging webhook
-
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );

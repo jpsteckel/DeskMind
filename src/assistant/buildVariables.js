@@ -37,9 +37,5 @@ export function buildVariables(client) {
 
     services_offered:    client.service_types ?? '',
     faq_blob:            client.faq_blob          ?? '',
-
-    // Integration endpoints (empty string disables the tool in the prompt)
-    booking_webhook_url: client.booking_webhook_url ?? '',
-    crm_webhook_url:     client.crm_webhook_url     ?? '',
   };
 }

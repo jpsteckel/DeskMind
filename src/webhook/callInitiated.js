@@ -1,5 +1,6 @@
 import { answerCall, transferCall } from '../telnyx/answerCall.js';
 import { startAssistant } from '../telnyx/startAssistant.js';
+import { getNextMonthBookings } from '../telnyx/calendarService.js';
 import { getCachedClient } from '../clients/clientCache.js';
 import { buildVariables } from '../assistant/buildVariables.js';
 import { storeCallMetadata } from '../calls/callCache.js';
@@ -58,6 +59,22 @@ export async function handleCallInitiated(payload) {
 
   // Map the client DB record to Telnyx dynamic variable format
   const variables = buildVariables(client);
+
+  // Fetch upcoming bookings for the next 30 days to avoid over-booking
+  let nextMonthBookingsList = 'Unavailable';
+  try {
+    const list = await getNextMonthBookings(client.calendar_tokens);
+    if (Array.isArray(list) && list.length > 0) {
+      nextMonthBookingsList = list.join('\n');
+    } else {
+      nextMonthBookingsList = 'None';
+    }
+  } catch (err) {
+    console.warn(`Failed to fetch calendar bookings for client ${client.id}:`, err?.message || err);
+  }
+
+  // Inject the booking list into dynamic variables for the assistant prompt
+  variables.next_month_bookings = nextMonthBookingsList;
 
   // Start the shared AI assistant, personalized for this client
   await startAssistant(call_control_id, variables);
