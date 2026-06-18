@@ -27,5 +27,4 @@ app.listen(PORT, () => {
 
 // Start background backfill job to ensure conversation transcripts/summaries
 // are filled in when Telnyx delays providing them.
-// CURRENTLY DISABLED FOR TESTING
-//startConversationBackfillJob();
+startConversationBackfillJob();
