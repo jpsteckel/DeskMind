@@ -10,6 +10,18 @@
  * @returns {object} Dynamic variables object ready to pass to Telnyx.
  */
 export function buildVariables(client) {
+  const now = new Date();
+  const currentDateTime = now.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  });
+
   return {
     // Core identity
     number:              client.number,
@@ -17,6 +29,7 @@ export function buildVariables(client) {
     assistant_name:      client.assistant_name   ?? 'Alex',
     tone:                client.tone             ?? 'friendly and professional',
     language:            client.language         ?? 'English',
+    current_day_time:    currentDateTime,
 
     // Instruction customization — empty string if not set so the placeholder
     // resolves to nothing rather than appearing raw in the prompt

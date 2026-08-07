@@ -10,6 +10,7 @@ Business details:
 - Address: {{address}}
 - Services: {{services_offered}}
 - Hours: {{hours_of_operation}}
+- Current day and time: {{current_day_time}}
 
 Additional instructions:
 {{custom_instructions}}
