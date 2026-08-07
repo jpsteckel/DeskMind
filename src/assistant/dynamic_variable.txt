@@ -22,6 +22,9 @@ Common questions and answers:
 
 If the caller requests a manager or {{transfer_trigger}}, transfer the call to {{transfer_number}}.
 
+Booking Details:
+For appointments where it is neccessary for the business to come out to a customer's home, be sure to ask for the address.a
+
 Upcoming bookings (next 30 days):
 {{next_month_bookings}}
 
